@@ -28,7 +28,7 @@ docker-compose exec backend php artisan migrate:fresh --seed
 
 http://localhost
 
-###Sample User:
+### Sample User:
 
 username: test@example.com
 password: password
