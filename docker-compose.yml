@@ -1,0 +1,82 @@
+version: "3.9"
+
+networks:
+  app-network:
+    driver: bridge
+
+services:
+
+  nginx:
+    build:
+      context: dockerize/nginx
+    working_dir: /var/www
+    volumes:
+      - ./laravel:/var/www/laravel
+      - ./vue:/var/www/vue
+      - ./etc/nginx/conf.d/default.conf.nginx:/etc/nginx/conf.d/default.conf
+    ports:
+      - 80:80
+      - 8080:8080
+    depends_on:
+      - backend
+      - mysql
+      - frontend  
+    networks:
+      - app-network
+
+  frontend:
+    build: 
+      context: ./vue
+      dockerfile: ../dockerize/vue/Dockerfile
+    working_dir: /home/node/app
+    volumes:
+      - ./vue:/home/node/app
+    environment:
+      NODE_ENV: development
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./laravel
+      dockerfile: ../dockerize/laravel/Dockerfile
+    working_dir: /var/www/laravel
+    volumes:
+        - ./etc/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
+        - ./laravel:/var/www/laravel
+    networks:
+        - app-network
+
+  composer:
+    image: composer:latest
+    volumes:
+      - ./laravel:/var/www/laravel
+    working_dir: /var/www/laravel
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:8.0.27
+    platform: linux/amd64
+    ports:
+      - 3306:3306
+    volumes:
+      - ./etc/mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: laraveldb
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
+    networks:
+      - app-network
+
+  smtp:
+    platform: linux/x86_64
+    image: mailhog/mailhog
+    logging:
+      driver: 'none'
+    ports:
+      - "8003:1025"
+      - "8100:8025"
+    networks:
+      - app-network
